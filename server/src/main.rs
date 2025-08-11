@@ -4,6 +4,7 @@ mod models;
 mod utils;
 
 use std::env;
+use dotenv::dotenv;
 
 use deadpool_postgres::{ManagerConfig, Runtime};
 use models::settings::Settings;
@@ -17,6 +18,9 @@ extern crate rocket;
 
 #[rocket::main]
 async fn main() -> Result<(), rocket::Error> {
+    // 加载 .env 文件
+    dotenv().ok();
+    
     // 配置 PostgreSQL 数据库
     // 通过环境变量设置数据库公网IP，端口，数据库名称，用户名，密码
     let mut config = deadpool_postgres::Config::new();
@@ -56,7 +60,35 @@ async fn main() -> Result<(), rocket::Error> {
         )
         .mount(
             "/",
-            routes![handlers::admin_book::admin_lessons_update,handlers::admin_lessons::admin_lessons,handlers::admin_lessons::admin_lesson,handlers::admin_lessons::admin_lesson_hidden,handlers::admin_lessons::admin_lesson_delete,handlers::admin_lessons::admin_lessons_and_teachers,handlers::admin_lessons::admin_lesson_update,handlers::admin_user::admin_user_lessons,handlers::admin_user::admin_users_all,handlers::admin_user::admin_user,handlers::auth::auth,handlers::booking::lessons,handlers::booking::book,handlers::booking::unbook,handlers::debug::debug,handlers::favicon::favicon,handlers::index::index,handlers::picture::picture,handlers::picture::avatar,handlers::schedule::admin_schedule,handlers::teacher::teacher_lessons,handlers::user::user_query,handlers::user::register_user,handlers::user::user_book_statistics],
+            routes![
+                handlers::admin_book::admin_lessons_update,
+                handlers::admin_lessons::admin_lessons,
+                handlers::admin_lessons::admin_lesson,
+                handlers::admin_lessons::admin_lesson_hidden,
+                handlers::admin_lessons::admin_lesson_delete,
+                handlers::admin_lessons::admin_lessons_and_teachers,
+                handlers::admin_lessons::admin_lesson_update,
+                handlers::admin_user::admin_user_lessons,
+                handlers::admin_user::admin_users_all,
+                handlers::admin_user::admin_user,
+                handlers::auth::auth,handlers::booking::lessons,
+                handlers::booking::book,handlers::booking::unbook,
+                handlers::debug::debug,handlers::favicon::favicon,
+                handlers::index::index,handlers::picture::picture,
+                handlers::picture::avatar,handlers::schedule::admin_schedule,
+                handlers::teacher::teacher_lessons,
+                handlers::user::user_query,
+                handlers::user::register_user,
+                handlers::user::user_book_statistics,
+                handlers::membership::get_plans,
+                handlers::membership::get_user_cards,
+                handlers::membership::purchase_card,
+                handlers::membership::get_card_usage,
+                handlers::location::get_locations,
+                handlers::location::get_available_locations,
+                handlers::location::check_location_availability,
+                handlers::location::get_location_stats
+                ],
         )
         .register(
             "/",

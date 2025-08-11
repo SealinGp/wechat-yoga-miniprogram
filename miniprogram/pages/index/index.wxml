@@ -1,6 +1,6 @@
 <view style="{{enabled?'':'display:none'}}">
-    <view class="wrapper" style="height:{{navigationHeight}}px;padding-top:{{navigationTop}}px;">
-        <view class="item-wrapper" style="height:{{navigationHeight}}px;padding-left:{{navigationPaddingLeft}}px">
+    <view class="wrapper" style="height:{{navigationHeight}}px;padding-top:{{navigationTop}}px;">    
+        <view class="item-wrapper" style="height:{{navigationHeight}}px;padding-left:{{navigationPaddingLeft}}px">          
             <view class="navigation-title" style="font-size:{{navigationTitleFontSize}}px;line-height:{{navigationTitleFontSize}}px;">
                 {{app.globalData.title}}
             </view>
@@ -28,7 +28,7 @@
             <view class="notice-item-subtitle">{{item.timeago}}</view>
         </view>
     </view>
-    <view class="copyright">版权归晨蕴约课工具所有</view>
+    <view class="copyright">版权归LC PILATES 空中普拉提所有</view>
     <!-- 预留底部栏的空间 -->
     <view style="height: 96rpx"></view>
 </view>

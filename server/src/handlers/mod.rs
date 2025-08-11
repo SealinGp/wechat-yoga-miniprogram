@@ -6,6 +6,8 @@ pub mod booking;
 pub mod debug;
 pub mod favicon;
 pub mod index;
+pub mod location;
+pub mod membership;
 pub mod picture;
 pub mod schedule;
 pub mod teacher;

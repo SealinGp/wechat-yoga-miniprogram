@@ -23,7 +23,7 @@ async fn login_we_chat(
     let json = res.text().await?;
     Ok(json)
 }
-#[get("/yoga/auth?<code>")]
+#[post("/yoga/auth", data = "<code>")]
 pub async fn auth(code: String, settings: &State<Settings>) -> Result<String, Status> {
     let json = login_we_chat(settings, code).await;
     match json {
