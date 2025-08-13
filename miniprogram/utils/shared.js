@@ -184,6 +184,30 @@ function getTabBarHeight() {
   } = wx.getSystemInfoSync();
   return (screenHeight - windowHeight - statusBarHeight) * pixelRatio;
 }
+// 通用请求函数
+function request(options) {
+  const app = getApp();
+  const baseUrl = app.globalData.host || 'http://127.0.0.1:8002';
+  
+  return new Promise((resolve, reject) => {
+    wx.request({
+      url: baseUrl + options.url,
+      method: options.method || 'GET',
+      data: options.data || {},
+      header: options.header || {
+        'Content-Type': 'application/json'
+      },
+      success(res) {
+        resolve(res);
+      },
+      fail(error) {
+        console.error('Request failed:', error);
+        reject(error);
+      }
+    });
+  });
+}
+
 module.exports = {
   getJson,
   getLoginCode,
@@ -194,5 +218,6 @@ module.exports = {
   checkUserAvailability,
   navigate,
   getRandomColor,
-  getTabBarHeight
+  getTabBarHeight,
+  request
 };

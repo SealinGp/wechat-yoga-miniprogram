@@ -1,30 +1,20 @@
 use crate::utils::data::{query_int_with_params, query_json_with_params, Body};
-use deadpool_postgres::Pool;
 use rocket::http::Status;
 use rocket::State;
+use sqlx::{Pool as sPool, Postgres};
 #[post("/yoga/admin/lessons/update?<open_id>", data = "<obj>")]
 pub async fn admin_lessons_update(
     open_id: String,
     obj: String,
-    pool: &State<Pool>,
+    sqlxPool: &State<sPool<Postgres>>,
 ) -> Result<String, Status> {
-    match pool.get().await {
-        Ok(conn) => {
-            match query_int_with_params(
-                &conn,
-                "select * from fn_admin_lessons_update($1)",
-                &[&Body(obj)],
-            )
-            .await
-            {
-                Ok(v) => {
-                    return Ok(v.to_string());
-                }
-                Err(error) => {
-                    println!("Error: {}", error);
-                    Err(Status::InternalServerError)
-                }
-            }
+    let query = "SELECT * FROM fn_admin_lessons_update($1)";
+    
+    match sqlx::query_scalar::<_, i32>(query)
+        .bind(obj)
+        .fetch_one(sqlxPool.inner()).await {
+        Ok(result) => {
+            Ok(result.to_string())
         }
         Err(error) => {
             println!("Error: {}", error);

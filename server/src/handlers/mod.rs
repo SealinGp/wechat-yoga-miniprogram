@@ -1,6 +1,13 @@
+pub mod action_button;
+pub mod admin_actions;
+pub mod admin_auth;
 pub mod admin_book;
 pub mod admin_lessons;
+pub mod admin_notices;
+pub mod admin_posters;
+pub mod admin_teachers;
 pub mod admin_user;
+pub mod admin_users;
 pub mod auth;
 pub mod booking;
 pub mod debug;

@@ -193,9 +193,8 @@ CREATE TABLE IF NOT EXISTS posters (
 CREATE TABLE IF NOT EXISTS action_buttons (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
-    icon VARCHAR(100),
-    action_type VARCHAR(20) DEFAULT 'navigate', -- navigate, external, function
-    action_value INTEGER NOT NULL, -- 对应的动作值
+    icon TEXT, -- 图标链接URL
+    link TEXT NOT NULL, -- 跳转链接，如 /pages/booking/booking
     sort_order INTEGER DEFAULT 0,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -394,11 +393,29 @@ INSERT INTO teachers (name, description, avatar_url, bio, certifications, specia
 ('王老师', '空中瑜伽导师', 'teacher3.jpg', '空中瑜伽专业导师，带你体验不一样的瑜伽练习', ARRAY['Aerial Yoga Certificate'], ARRAY['空中瑜伽', '体式创新'], 6)
 ON CONFLICT DO NOTHING;
 
+-- 插入示例课程数据
+INSERT INTO lessons (title, description, teacher_id, location_id, lesson_type, difficulty_level, start_time, end_time, max_students, price, equipment_required, notes) VALUES 
+-- 今天和明天的课程
+('哈他瑜伽基础班', '适合初学者的温和瑜伽练习，注重呼吸与体位的配合', 1, 1, 'team'::lesson_type, 'beginner'::difficulty_level, CURRENT_TIMESTAMP + INTERVAL '2 hours', CURRENT_TIMESTAMP + INTERVAL '3 hours', 20, 88.00, ARRAY['瑜伽垫'], '请提前10分钟到场'),
+('空中瑜伽体验课', '在吊床的辅助下完成各种瑜伽体式，适合想尝试新鲜练习的会员', 3, 3, 'small_class'::lesson_type, 'intermediate'::difficulty_level, CURRENT_TIMESTAMP + INTERVAL '4 hours', CURRENT_TIMESTAMP + INTERVAL '5 hours', 8, 168.00, ARRAY['空中吊床'], '第一次练习请至少提前15分钟到场'),
+('普拉提塑形课', '针对核心力量训练的普拉提课程，帮助改善体态', 2, 4, 'small_class'::lesson_type, 'intermediate'::difficulty_level, CURRENT_TIMESTAMP + INTERVAL '6 hours', CURRENT_TIMESTAMP + INTERVAL '7 hours', 6, 198.00, ARRAY['普拉提器械'], ''),
+('晚间阴瑜伽', '放松身心的阴瑜伽练习，适合下班后的放松时光', 1, 2, 'team'::lesson_type, 'all_levels'::difficulty_level, CURRENT_TIMESTAMP + INTERVAL '1 day', CURRENT_TIMESTAMP + INTERVAL '1 day 1 hour', 15, 98.00, ARRAY['瑜伽垫', '抱枕'], '建议穿宽松舒适的衣物'),
+('私人瑜伽定制课', '一对一个性化瑜伽指导，根据个人需求定制练习内容', 1, 6, 'private'::lesson_type, 'all_levels'::difficulty_level, CURRENT_TIMESTAMP + INTERVAL '1 day 2 hours', CURRENT_TIMESTAMP + INTERVAL '1 day 3 hours', 1, 399.00, ARRAY['瑜伽垫', '辅助道具'], '需提前预约'),
+-- 未来几天的课程
+('流瑜伽进阶班', '动态的流瑜伽练习，提升力量和柔韧性', 2, 1, 'team'::lesson_type, 'advanced'::difficulty_level, CURRENT_TIMESTAMP + INTERVAL '2 days', CURRENT_TIMESTAMP + INTERVAL '2 days 1 hour', 18, 128.00, ARRAY['瑜伽垫'], '需要一定瑜伽基础'),
+('冥想与呼吸课', '专注于冥想技巧和呼吸法练习的课程', 3, 5, 'small_class'::lesson_type, 'all_levels'::difficulty_level, CURRENT_TIMESTAMP + INTERVAL '3 days', CURRENT_TIMESTAMP + INTERVAL '3 days 45 minutes', 12, 78.00, ARRAY['冥想坐垫'], ''),
+('周末空中瑜伽工作坊', '深度空中瑜伽练习工作坊，适合有基础的学员', 3, 3, 'workshop'::lesson_type, 'advanced'::difficulty_level, CURRENT_TIMESTAMP + INTERVAL '4 days', CURRENT_TIMESTAMP + INTERVAL '4 days 2 hours', 10, 288.00, ARRAY['空中吊床', '瑜伽垫'], '需要空中瑜伽基础经验')
+ON CONFLICT DO NOTHING;
+
 -- 插入通知公告数据
-INSERT INTO notices (title, content, author) VALUES 
-('欢迎来到瑜伽馆', '欢迎大家加入我们的瑜伽大家庭，开启健康生活新篇章！', '管理员'),
-('课程安排通知', '本周新增晚间课程，欢迎大家踊跃报名参加。', '教务处'),
-('节假日营业通知', '春节期间营业时间调整，具体安排请查看详情。', '管理员')
+INSERT INTO notices (title, content, author, priority) VALUES 
+('欢迎来到LC PILATES空中普拉提', '欢迎大家加入我们的瑜伽大家庭，开启健康生活新篇章！这里有专业的导师团队，完善的设施设备，丰富多样的课程选择。', '管理员', 10),
+('新会员优惠活动', '新会员首月享受8折优惠！购买年卡更有超值礼品赠送，名额有限，先到先得。', '市场部', 8),
+('空中瑜伽工作坊报名开始', '本月28日将举办空中瑜伽主题工作坊，由资深导师亲自指导，体验不一样的瑜伽练习。现在开始接受报名。', '教务处', 7),
+('设施升级公告', '为了给大家提供更好的练习环境，瑜伽馆正在进行设施升级，部分时段可能会有轻微影响，敬请谅解。', '管理员', 6),
+('春季养生瑜伽系列课程', '春天来了！推出春季养生瑜伽系列课程，帮助大家调理身心，迎接美好的春天。', '教务处', 5),
+('教师节特别活动', '感恩所有的瑜伽导师！教师节期间将举办特别感恩活动，所有会员都可以参与。', '管理员', 4),
+('会员生日福利', '会员生日当月可享受免费体验课一次，还有精美生日礼品等您来领取！', '会员服务', 3)
 ON CONFLICT DO NOTHING;
 
 -- 插入轮播图数据
@@ -409,12 +426,15 @@ INSERT INTO posters (title, image, link_url, sort_order) VALUES
 ON CONFLICT DO NOTHING;
 
 -- 插入功能按钮数据
-INSERT INTO action_buttons (name, icon, action_value, sort_order) VALUES 
-('立即预约', 'calendar', 2, 1),
-('今日一言', 'quote', 3, 2),
-('数独游戏', 'game', 5, 3),
-('积分商城', 'gift', 6, 4),
-('通知公告', 'notice', 7, 5)
+INSERT INTO action_buttons (name, icon, link, sort_order) VALUES 
+('瑜伽', 'https://cdn.example.com/icons/yoga.png', '/pages/lessons/lessons', 1),
+('约团课', 'https://cdn.example.com/icons/group-class.png', '/pages/booking/booking', 2),
+('约私教', 'https://cdn.example.com/icons/private-class.png', '/pages/private/private', 3),
+('会员卡', 'https://cdn.example.com/icons/membership.png', '/pages/membership/membership', 4),
+('照片墙', 'https://cdn.example.com/icons/photo-wall.png', '/pages/gallery/gallery', 5),
+('礼物', 'https://cdn.example.com/icons/gift.png', '/pages/market/market', 6),
+('公告', 'https://cdn.example.com/icons/notice.png', '/pages/notices/notices', 7),
+('在线客服', 'https://cdn.example.com/icons/customer-service.png', '/pages/service/service', 8)
 ON CONFLICT DO NOTHING;
 
 -- 插入商城信息数据
@@ -425,18 +445,18 @@ ON CONFLICT DO NOTHING;
 -- 插入会员卡套餐示例数据
 INSERT INTO membership_plans (name, description, card_type, validity_days, total_classes, price, original_price, applicable_lesson_types, max_bookings_per_day, benefits, restrictions, sort_order) VALUES 
 -- 不限次卡
-('年卡', '365天内无限次上课，适合长期练习的会员', 'unlimited', 365, NULL, 2680.00, 3200.00, NULL, 2, ARRAY['全年无限次课程', '优先预约权', '会员专享活动'], ARRAY['每日最多预约2节课', '需提前24小时取消'], 1),
-('半年卡', '180天内无限次上课，体验瑜伽生活方式', 'unlimited', 180, NULL, 1580.00, 1800.00, NULL, 2, ARRAY['半年无限次课程', '优先预约权'], ARRAY['每日最多预约2节课', '需提前24小时取消'], 2),
-('季度卡', '90天内无限次上课，短期集中训练', 'unlimited', 90, NULL, 880.00, 1000.00, NULL, 1, ARRAY['季度无限次课程'], ARRAY['每日最多预约1节课'], 3),
+('年卡', '365天内无限次上课，适合长期练习的会员', 'unlimited'::membership_card_type, 365, NULL, 2680.00, 3200.00, NULL, 2, ARRAY['全年无限次课程', '优先预约权', '会员专享活动'], ARRAY['每日最多预约2节课', '需提前24小时取消'], 1),
+('半年卡', '180天内无限次上课，体验瑜伽生活方式', 'unlimited'::membership_card_type, 180, NULL, 1580.00, 1800.00, NULL, 2, ARRAY['半年无限次课程', '优先预约权'], ARRAY['每日最多预约2节课', '需提前24小时取消'], 2),
+('季度卡', '90天内无限次上课，短期集中训练', 'unlimited'::membership_card_type, 90, NULL, 880.00, 1000.00, NULL, 1, ARRAY['季度无限次课程'], ARRAY['每日最多预约1节课'], 3),
 
 -- 次数卡 - 通用
-('20次卡', '20次课程，有效期6个月，适合新手体验', 'count_based', 180, 20, 1500.00, 1600.00, NULL, 2, ARRAY['20次任意课程', '6个月有效期'], ARRAY['逾期作废', '不可转让'], 6),
-('10次卡', '10次课程，有效期3个月，轻度练习', 'count_based', 90, 10, 800.00, 900.00, NULL, 1, ARRAY['10次任意课程', '3个月有效期'], ARRAY['逾期作废'], 7),
-('5次卡', '5次课程，有效期1个月，体验课程', 'count_based', 30, 5, 450.00, 500.00, NULL, 1, ARRAY['5次任意课程', '1个月有效期'], ARRAY['逾期作废'], 8),
+('20次卡', '20次课程，有效期6个月，适合新手体验', 'count_based'::membership_card_type, 180, 20, 1500.00, 1600.00, NULL, 2, ARRAY['20次任意课程', '6个月有效期'], ARRAY['逾期作废', '不可转让'], 6),
+('10次卡', '10次课程，有效期3个月，轻度练习', 'count_based'::membership_card_type, 90, 10, 800.00, 900.00, NULL, 1, ARRAY['10次任意课程', '3个月有效期'], ARRAY['逾期作废'], 7),
+('5次卡', '5次课程，有效期1个月，体验课程', 'count_based'::membership_card_type, 30, 5, 450.00, 500.00, NULL, 1, ARRAY['5次任意课程', '1个月有效期'], ARRAY['逾期作废'], 8),
 
 -- 次数卡 - 专项
-('私教10次卡', '10次私教课程，专业一对一指导', 'count_based', 180, 10, 3500.00, 4000.00, ARRAY['private'], 1, ARRAY['专业私教指导', '个性化训练计划'], ARRAY['仅限私教课程', '需提前预约'], 4),
-('小班课15次卡', '15次小班课程，精品小班教学', 'count_based', 120, 15, 1800.00, 2000.00, ARRAY['small_class'], 2, ARRAY['精品小班教学', '更多关注'], ARRAY['仅限小班课程'], 5)
+('私教10次卡', '10次私教课程，专业一对一指导', 'count_based'::membership_card_type, 180, 10, 3500.00, 4000.00, ARRAY['private'], 1, ARRAY['专业私教指导', '个性化训练计划'], ARRAY['仅限私教课程', '需提前预约'], 4),
+('小班课15次卡', '15次小班课程，精品小班教学', 'count_based'::membership_card_type, 120, 15, 1800.00, 2000.00, ARRAY['small_class'], 2, ARRAY['精品小班教学', '更多关注'], ARRAY['仅限小班课程'], 5)
 
 ON CONFLICT DO NOTHING;
 
@@ -444,3 +464,28 @@ ON CONFLICT DO NOTHING;
 INSERT INTO admin_users (username, password_hash) VALUES 
 ('admin', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewKyUK0Gg5hGD5aS')
 ON CONFLICT (username) DO NOTHING;
+
+-- 插入示例用户数据
+INSERT INTO users (open_id, nick_name, avatar_url, phone) VALUES 
+('wx_demo_user_001', '瑜伽爱好者小张', 'https://cdn.example.com/avatars/avatar1.jpg', '13800138001'),
+('wx_demo_user_002', '健身达人小李', 'https://cdn.example.com/avatars/avatar2.jpg', '13800138002'),
+('wx_demo_user_003', '养生小王', 'https://cdn.example.com/avatars/avatar3.jpg', '13800138003')
+ON CONFLICT (open_id) DO NOTHING;
+
+-- 插入示例预约数据（为已有的课程创建预约）
+INSERT INTO bookings (user_id, lesson_id, booking_time, status, notes) 
+SELECT u.id, l.id, CURRENT_TIMESTAMP - INTERVAL '1 hour', 'confirmed'::booking_status, '期待这次课程'
+FROM users u, lessons l 
+WHERE u.open_id = 'wx_demo_user_001' 
+  AND l.title IN ('哈他瑜伽基础班', '晚间阴瑜伽')
+UNION ALL
+SELECT u.id, l.id, CURRENT_TIMESTAMP - INTERVAL '30 minutes', 'confirmed'::booking_status, '第一次尝试'
+FROM users u, lessons l 
+WHERE u.open_id = 'wx_demo_user_002' 
+  AND l.title = '空中瑜伽体验课'
+UNION ALL  
+SELECT u.id, l.id, CURRENT_TIMESTAMP - INTERVAL '2 hours', 'confirmed'::booking_status, ''
+FROM users u, lessons l 
+WHERE u.open_id = 'wx_demo_user_003' 
+  AND l.title IN ('普拉提塑形课', '冥想与呼吸课')
+ON CONFLICT (user_id, lesson_id) DO NOTHING;

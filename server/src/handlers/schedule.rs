@@ -1,7 +1,6 @@
-use crate::utils::data::query_json;
 use chrono::{Datelike, NaiveDateTime, Utc, Weekday};
 use chrono_tz::Tz;
-use deadpool_postgres::Pool;
+use sqlx::{Pool as sPool, Postgres};
 use image::io::Reader as ImageReader;
 use image::{DynamicImage, Rgba};
 use imageproc::drawing::draw_text_mut;
@@ -12,16 +11,12 @@ use rocket::State;
 use rusttype::{point, Font, Rect, Scale};
 use std::io::Cursor;
 #[get("/yoga/admin/schedule")]
-pub async fn admin_schedule(pool: &State<Pool>) -> Result<Vec<u8>, Status> {
-    let conn = match pool.get().await {
-        Ok(conn) => conn,
-        Err(error) => {
-            println!("Error: {}", error);
-            return Err(Status::InternalServerError);
-        }
-    };
-    let obj: Value = match query_json(&conn, "select * from fn_query_week_lessons()").await {
-        Ok(v) => serde_json::from_slice(&v.0).unwrap(),
+pub async fn admin_schedule(sqlxPool: &State<sPool<Postgres>>) -> Result<Vec<u8>, Status> {
+    let query = "select * from fn_query_week_lessons()";
+    
+    let obj: Value = match sqlx::query_scalar::<_, serde_json::Value>(query)
+        .fetch_one(sqlxPool.inner()).await {
+        Ok(result) => result,
         Err(error) => {
             println!("Error: {}", error);
             return Err(Status::InternalServerError);

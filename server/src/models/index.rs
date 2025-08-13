@@ -19,9 +19,8 @@ pub struct PosterModel {
 pub struct ActionButtonModel {
     pub id: i32,
     pub name: String,
-    pub icon: Option<String>,
-    pub action_type: String,
-    pub action_value: i32,
+    pub icon: Option<String>, // 图标链接URL
+    pub link: String, // 跳转链接，如 /pages/booking/booking
     pub sort_order: i32,
     pub is_active: bool,
     pub created_at: DateTime<Utc>,

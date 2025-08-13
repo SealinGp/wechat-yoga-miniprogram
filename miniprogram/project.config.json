@@ -1,5 +1,5 @@
 {
-  "miniprogramRoot": "miniprogram/",
+  "miniprogramRoot": "./",
   "cloudfunctionRoot": "cloudfunctions/",
   "setting": {
     "urlCheck": false,
@@ -52,7 +52,7 @@
   },
   "appid": "wxe1521b4d7569d5ab",
   "projectname": "Yoga",
-  "libVersion": "2.30.2",
+  "libVersion": "3.9.0",
   "cloudfunctionTemplateRoot": "cloudfunctionTemplate/",
   "condition": {
     "search": {

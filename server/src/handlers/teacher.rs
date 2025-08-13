@@ -1,5 +1,4 @@
-use crate::utils::data::{query_int_with_params, query_json_with_params, Body};
-use deadpool_postgres::Pool;
+use sqlx::{Pool as sPool, Postgres};
 use rocket::http::Status;
 use rocket::State;
 #[get("/yoga/teacher/lessons?<start_time>&<end_time>&<open_id>&<class_type>&<teacher_id>")]
@@ -9,29 +8,18 @@ pub async fn teacher_lessons(
     open_id: String,
     class_type: i32,
     teacher_id: i32,
-    pool: &State<Pool>,
+    sqlxPool: &State<sPool<Postgres>>,
 ) -> Result<String, Status> {
-    match pool.get().await {
-        Ok(conn) => {
-            match query_json_with_params(
-                &conn,
-                "select * from fn_teacher_lessons($1,$2,$3,$4,$5)",
-                &[&start_time,&end_time,&open_id,&class_type,&teacher_id],
-            )
-            .await
-            {
-                Ok(v) => {
-                    return match String::from_utf8(v.0) {
-                        Ok(v) => Ok(v),
-                        Err(_) => Err(Status::InternalServerError),
-                    };
-                }
-                Err(error) => {
-                    println!("Error: {}", error);
-                    Err(Status::InternalServerError)
-                }
-            }
-        }
+    let query = "select * from fn_teacher_lessons($1,$2,$3,$4,$5)";
+    
+    match sqlx::query_scalar::<_, serde_json::Value>(query)
+        .bind(start_time)
+        .bind(end_time)
+        .bind(open_id)
+        .bind(class_type)
+        .bind(teacher_id)
+        .fetch_one(sqlxPool.inner()).await {
+        Ok(result) => Ok(result.to_string()),
         Err(error) => {
             println!("Error: {}", error);
             Err(Status::InternalServerError)
