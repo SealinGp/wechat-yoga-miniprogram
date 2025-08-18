@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use chrono::NaiveDateTime;
 use sqlx::{Pool as sPool, Postgres, FromRow};
+use crate::models::admin_user;
 
 #[derive(Serialize, Deserialize, FromRow)]
 pub struct AdminUser {
@@ -28,52 +29,68 @@ pub struct UpdateAdminUserRequest {
     pub is_active: Option<bool>,
 }
 
-#[get("/admin/admin-users")]
+#[get("/api/admin/admin-users")]
 pub async fn get_admin_users(sqlxPool: &State<sPool<Postgres>>) -> Result<String, Status> {
-    let query = r#"
-        SELECT id, username, null as password_hash, is_active, 
-               created_at AT TIME ZONE 'Asia/Shanghai' as created_at,
-               updated_at AT TIME ZONE 'Asia/Shanghai' as updated_at
-        FROM admin_users
-        ORDER BY created_at DESC
-    "#;
-    
-    match sqlx::query_as::<_, AdminUser>(query).fetch_all(sqlxPool.inner()).await {
+    match admin_user::get_all_admin_users(sqlxPool.inner()).await {
         Ok(admin_users) => {
-            Ok(serde_json::to_string(&admin_users).unwrap())
+            // Convert to response format without password_hash
+            let response_users: Vec<AdminUser> = admin_users.into_iter().map(|user| AdminUser {
+                id: Some(user.id),
+                username: user.username,
+                password_hash: None, // Don't expose password hash
+                is_active: Some(user.is_active),
+                created_at: Some(user.created_at.naive_utc()),
+                updated_at: Some(user.updated_at.naive_utc()),
+            }).collect();
+            
+            match serde_json::to_string(&response_users) {
+                Ok(json) => Ok(json),
+                Err(error) => {
+                    println!("JSON serialization error: {}", error);
+                    Err(Status::InternalServerError)
+                }
+            }
         }
         Err(error) => {
-            println!("Error querying admin users: {}", error);
+            println!("Database error: {}", error);
             Err(Status::InternalServerError)
         }
     }
 }
 
-#[post("/admin/admin-users", data = "<admin_user_request>")]
+#[post("/api/admin/admin-users", data = "<admin_user_request>")]
 pub async fn create_admin_user(
     admin_user_request: rocket::serde::json::Json<CreateAdminUserRequest>,
     sqlxPool: &State<sPool<Postgres>>,
 ) -> Result<String, Status> {
-    // Simple password hashing (in production, use bcrypt)
-    let password_hash = format!("hash_{}", admin_user_request.password);
+    // Convert handler request to model request
+    let create_request = admin_user::AdminUserCreateRequest {
+        username: admin_user_request.username.clone(),
+        password: admin_user_request.password.clone(),
+    };
     
-    let query = r#"
-        INSERT INTO admin_users (username, password_hash)
-        VALUES ($1, $2)
-        RETURNING id, username, null as password_hash, is_active, 
-                 created_at AT TIME ZONE 'Asia/Shanghai' as created_at,
-                 updated_at AT TIME ZONE 'Asia/Shanghai' as updated_at
-    "#;
-    
-    match sqlx::query_as::<_, AdminUser>(query)
-        .bind(&admin_user_request.username)
-        .bind(&password_hash)
-        .fetch_one(sqlxPool.inner()).await {
-        Ok(admin_user) => {
-            Ok(serde_json::to_string(&admin_user).unwrap())
+    match admin_user::create_admin_user(&create_request, sqlxPool.inner()).await {
+        Ok(user) => {
+            // Convert to response format without password_hash
+            let response_user = AdminUser {
+                id: Some(user.id),
+                username: user.username,
+                password_hash: None, // Don't expose password hash
+                is_active: Some(user.is_active),
+                created_at: Some(user.created_at.naive_utc()),
+                updated_at: Some(user.updated_at.naive_utc()),
+            };
+            
+            match serde_json::to_string(&response_user) {
+                Ok(json) => Ok(json),
+                Err(error) => {
+                    println!("JSON serialization error: {}", error);
+                    Err(Status::InternalServerError)
+                }
+            }
         }
         Err(error) => {
-            println!("Error creating admin user: {}", error);
+            println!("Database error: {}", error);
             if error.to_string().contains("duplicate key") {
                 Err(Status::Conflict)
             } else {
@@ -83,97 +100,63 @@ pub async fn create_admin_user(
     }
 }
 
-#[put("/admin/admin-users/<id>", data = "<admin_user_request>")]
+#[put("/api/admin/admin-users/<id>", data = "<admin_user_request>")]
 pub async fn update_admin_user(
     id: i32,
     admin_user_request: rocket::serde::json::Json<UpdateAdminUserRequest>,
     sqlxPool: &State<sPool<Postgres>>,
 ) -> Result<String, Status> {
-    // Protect the default admin user (id = 1) from being deactivated
-    if id == 1 && admin_user_request.is_active == Some(false) {
-        return Ok(json!({
-            "error": "Default admin user cannot be deactivated"
-        }).to_string());
-    }
+    // Convert handler request to model request
+    let update_request = admin_user::AdminUserUpdateRequest {
+        id,
+        username: admin_user_request.username.clone(),
+        password: admin_user_request.password.clone(),
+        is_active: admin_user_request.is_active,
+    };
     
-    let mut query = "UPDATE admin_users SET updated_at = CURRENT_TIMESTAMP".to_string();
-    let mut bind_count = 1;
-    let mut params: Vec<String> = vec![id.to_string()];
-    
-    if let Some(username) = &admin_user_request.username {
-        query.push_str(&format!(", username = ${}", bind_count + 1));
-        params.push(username.clone());
-        bind_count += 1;
-    }
-    
-    if let Some(password) = &admin_user_request.password {
-        let password_hash = format!("hash_{}", password);
-        query.push_str(&format!(", password_hash = ${}", bind_count + 1));
-        params.push(password_hash);
-        bind_count += 1;
-    }
-    
-    if let Some(is_active) = admin_user_request.is_active {
-        query.push_str(&format!(", is_active = ${}", bind_count + 1));
-        params.push(is_active.to_string());
-        bind_count += 1;
-    }
-    
-    query.push_str(" WHERE id = $1 RETURNING id, username, null as password_hash, is_active, created_at AT TIME ZONE 'Asia/Shanghai' as created_at, updated_at AT TIME ZONE 'Asia/Shanghai' as updated_at");
-    
-    // Use dynamic query building with SQLx
-    let mut sqlx_query = sqlx::query_as::<_, AdminUser>(&query).bind(id);
-    
-    if let Some(username) = &admin_user_request.username {
-        sqlx_query = sqlx_query.bind(username);
-    }
-    
-    if let Some(password) = &admin_user_request.password {
-        let password_hash = format!("hash_{}", password);
-        sqlx_query = sqlx_query.bind(password_hash);
-    }
-    
-    if let Some(is_active) = admin_user_request.is_active {
-        sqlx_query = sqlx_query.bind(is_active);
-    }
-    
-    match sqlx_query.fetch_optional(sqlxPool.inner()).await {
-        Ok(Some(admin_user)) => {
-            Ok(serde_json::to_string(&admin_user).unwrap())
+    match admin_user::update_admin_user(&update_request, sqlxPool.inner()).await {
+        Ok(Some(user)) => {
+            // Convert to response format without password_hash
+            let response_user = AdminUser {
+                id: Some(user.id),
+                username: user.username,
+                password_hash: None, // Don't expose password hash
+                is_active: Some(user.is_active),
+                created_at: Some(user.created_at.naive_utc()),
+                updated_at: Some(user.updated_at.naive_utc()),
+            };
+            
+            match serde_json::to_string(&response_user) {
+                Ok(json) => Ok(json),
+                Err(error) => {
+                    println!("JSON serialization error: {}", error);
+                    Err(Status::InternalServerError)
+                }
+            }
         }
         Ok(None) => {
-            Err(Status::NotFound)
-        }
-        Err(error) => {
-            println!("Error updating admin user: {}", error);
-            Err(Status::InternalServerError)
-        }
-    }
-}
-
-#[delete("/admin/admin-users/<id>")]
-pub async fn delete_admin_user(id: i32, sqlxPool: &State<sPool<Postgres>>) -> Result<String, Status> {
-    // Protect the default admin user (id = 1) from deletion
-    if id == 1 {
-        return Ok(json!({
-            "error": "Default admin user cannot be deleted"
-        }).to_string());
-    }
-    
-    let query = "DELETE FROM admin_users WHERE id = $1";
-    
-    match sqlx::query(query)
-        .bind(id)
-        .execute(sqlxPool.inner()).await {
-        Ok(result) => {
-            if result.rows_affected() > 0 {
-                Ok(json!({"success": true, "message": "Admin user deleted successfully"}).to_string())
+            // Either not found or protected from deactivation
+            if id == 1 && admin_user_request.is_active == Some(false) {
+                Ok(json!({"error": "Default admin user cannot be deactivated"}).to_string())
             } else {
                 Err(Status::NotFound)
             }
         }
         Err(error) => {
-            println!("Error deleting admin user: {}", error);
+            println!("Database error: {}", error);
+            Err(Status::InternalServerError)
+        }
+    }
+}
+
+#[delete("/api/admin/admin-users/<id>")]
+pub async fn delete_admin_user(id: i32, sqlxPool: &State<sPool<Postgres>>) -> Result<String, Status> {
+    match admin_user::delete_admin_user(id, sqlxPool.inner()).await {
+        Ok(response) => {
+            Ok(response.to_string())
+        }
+        Err(error) => {
+            println!("Database error: {}", error);
             Err(Status::InternalServerError)
         }
     }

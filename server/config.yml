@@ -1,0 +1,6 @@
+appid: "wxe1521b4d7569d5ab"
+secret: "650b68e1eaeebdc7976eaf58552a3430"
+image_dir: "/Users/seazhang/Public/projects/wechat-yoga-miniprogram/server/images"
+server_scheme: "http"
+server_host: "127.0.0.1"
+server_port: "8002"

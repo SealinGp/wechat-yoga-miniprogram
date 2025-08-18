@@ -2,7 +2,7 @@ use crate::utils::data::{query_int_with_params, query_json_with_params, Body};
 use rocket::http::Status;
 use rocket::State;
 use sqlx::{Pool as sPool, Postgres};
-#[post("/yoga/admin/lessons/update?<open_id>", data = "<obj>")]
+#[post("/api/admin/lessons/update?<open_id>", data = "<obj>")]
 pub async fn admin_lessons_update(
     open_id: String,
     obj: String,

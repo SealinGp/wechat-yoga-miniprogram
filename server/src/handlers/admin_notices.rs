@@ -33,7 +33,7 @@ pub struct UpdateNoticeRequest {
     pub is_active: Option<bool>,
 }
 
-#[get("/admin/notices")]
+#[get("/api/admin/notices")]
 pub async fn get_notices(sqlxPool: &State<sPool<Postgres>>) -> Result<String, Status> {
     let query = r#"
         SELECT id, title, content, author, priority, is_active, 
@@ -53,7 +53,7 @@ pub async fn get_notices(sqlxPool: &State<sPool<Postgres>>) -> Result<String, St
     }
 }
 
-#[post("/admin/notices", data = "<notice_request>")]
+#[post("/api/admin/notices", data = "<notice_request>")]
 pub async fn create_notice(
     notice_request: rocket::serde::json::Json<CreateNoticeRequest>,
     sqlxPool: &State<sPool<Postgres>>,
@@ -81,7 +81,7 @@ pub async fn create_notice(
     }
 }
 
-#[put("/admin/notices/<id>", data = "<notice_request>")]
+#[put("/api/admin/notices/<id>", data = "<notice_request>")]
 pub async fn update_notice(
     id: i32,
     notice_request: rocket::serde::json::Json<UpdateNoticeRequest>,
@@ -120,7 +120,7 @@ pub async fn update_notice(
     }
 }
 
-#[delete("/admin/notices/<id>")]
+#[delete("/api/admin/notices/<id>")]
 pub async fn delete_notice(id: i32, sqlxPool: &State<sPool<Postgres>>) -> Result<String, Status> {
     let query = "DELETE FROM notices WHERE id = $1";
     

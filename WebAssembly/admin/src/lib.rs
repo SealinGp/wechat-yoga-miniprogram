@@ -25,7 +25,7 @@ extern "C" {
 #[wasm_bindgen]
 pub async fn query_lesson(page: &Page, base_uri: &str, obj: String) -> Result<(), JsValue> {
     let json = post_data(
-        format!("{}/yoga/admin/lesson", base_uri).as_str(),
+        format!("{}/api/admin/lesson", base_uri).as_str(),
         obj.as_str(),
     )
     .await?;
@@ -71,7 +71,7 @@ pub async fn suspend_lesson(
 ) -> Result<JsValue, JsValue> {
     get_json(
         format!(
-            "{}/yoga/admin/lesson/hidden?id={}&status={}&openid={}",
+            "{}/api/admin/lesson/hidden?id={}&status={}&openid={}",
             base_uri, id, status, openid
         )
         .as_str(),
@@ -81,7 +81,7 @@ pub async fn suspend_lesson(
 #[wasm_bindgen]
 pub async fn delete_booked(base_uri: &str, obj: String) -> Result<JsValue, JsValue> {
     post_data(
-        format!("{}/yoga/admin/lesson/delete", base_uri).as_str(),
+        format!("{}/api/admin/lesson/delete", base_uri).as_str(),
         obj.as_str(),
     )
     .await
@@ -90,7 +90,7 @@ pub async fn delete_booked(base_uri: &str, obj: String) -> Result<JsValue, JsVal
 pub async fn lessons_and_teachers(page: &Page, base_uri: &str, id: u32, openid: String) {
     let json = get_json(
         format!(
-            "{}/yoga/admin/lessons/and/teachers?&id={}&openid={}",
+            "{}/api/admin/lessons/and/teachers?&id={}&openid={}",
             base_uri, id, openid
         )
         .as_str(),
@@ -140,7 +140,7 @@ pub async fn lesson_update(
 pub async fn query_lessons(page: &Page, base_uri: &str, start: u32, end: u32, openid: String) {
     let json = match get_json(
         format!(
-            "{}/yoga/admin/lessons?start={}&end={}&openid={}",
+            "{}/api/admin/lessons?start={}&end={}&openid={}",
             base_uri, start, end, openid
         )
         .as_str(),
@@ -394,7 +394,7 @@ pub async fn lessons_update(
     obj: String,
 ) -> Result<JsValue, JsValue> {
     let json = post_data(
-        format!("{}/yoga/admin/lessons/update?open_id={}", base_uri, open_id,).as_str(),
+        format!("{}/api/admin/lessons/update?open_id={}", base_uri, open_id,).as_str(),
         obj.as_str(),
     )
     .await?;

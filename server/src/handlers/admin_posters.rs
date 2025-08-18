@@ -39,7 +39,7 @@ pub struct UpdatePosterRequest {
     pub end_date: Option<String>,
 }
 
-#[get("/admin/posters")]
+#[get("/api/admin/posters")]
 pub async fn get_posters(sqlxPool: &State<sPool<Postgres>>) -> Result<String, Status> {
     let query = r#"
         SELECT id, title, image, link_url, sort_order, is_active,
@@ -61,7 +61,7 @@ pub async fn get_posters(sqlxPool: &State<sPool<Postgres>>) -> Result<String, St
     }
 }
 
-#[post("/admin/posters", data = "<poster_request>")]
+#[post("/api/admin/posters", data = "<poster_request>")]
 pub async fn create_poster(
     poster_request: rocket::serde::json::Json<CreatePosterRequest>,
     sqlxPool: &State<sPool<Postgres>>,
@@ -93,7 +93,7 @@ pub async fn create_poster(
     }
 }
 
-#[put("/admin/posters/<id>", data = "<poster_request>")]
+#[put("/api/admin/posters/<id>", data = "<poster_request>")]
 pub async fn update_poster(
     id: i32,
     poster_request: rocket::serde::json::Json<UpdatePosterRequest>,
@@ -138,7 +138,7 @@ pub async fn update_poster(
     }
 }
 
-#[delete("/admin/posters/<id>")]
+#[delete("/api/admin/posters/<id>")]
 pub async fn delete_poster(id: i32, sqlxPool: &State<sPool<Postgres>>) -> Result<String, Status> {
     let query = "DELETE FROM posters WHERE id = $1";
     

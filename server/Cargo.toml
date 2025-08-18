@@ -22,3 +22,5 @@ dotenv = "0.15.0"
 serde_json = "1.0.142"
 sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "postgres", "chrono", "json", "rust_decimal"] }
 rust_decimal = { version = "1.35", features = ["serde"] }
+uuid = { version = "1.0", features = ["v4", "serde"] }
+yaml-rust = "0.4.5"

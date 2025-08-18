@@ -2,19 +2,14 @@ use rocket::http::Status;
 use rocket::{post, get, State};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use chrono::{Utc, NaiveDateTime};
-use sqlx::{Pool as sPool, Postgres, FromRow};
+use chrono::Utc;
+use sqlx::{Pool as sPool, Postgres};
+use crate::models::admin_user;
 
 #[derive(Deserialize)]
 pub struct LoginRequest {
     username: String,
     password: String,
-}
-
-#[derive(Serialize, FromRow)]
-pub struct AdminUser {
-    id: i32,
-    username: String,
 }
 
 #[derive(Serialize)]
@@ -24,18 +19,14 @@ pub struct LoginResponse {
     username: String,
 }
 
-#[post("/admin/login", data = "<login_request>")]
+#[post("/api/admin/login", data = "<login_request>")]
 pub async fn admin_login(
     login_request: rocket::serde::json::Json<LoginRequest>,
     sqlxPool: &State<sPool<Postgres>>,
 ) -> Result<String, Status> {
     // For demo purposes, check if password matches "admin123" - in production use bcrypt
     if login_request.password == "admin123" {
-        let query = "SELECT id, username FROM admin_users WHERE username = $1 AND is_active = true";
-        
-        match sqlx::query_as::<_, AdminUser>(query)
-            .bind(&login_request.username)
-            .fetch_optional(sqlxPool.inner()).await {
+        match admin_user::authenticate_admin_user(&login_request.username, sqlxPool.inner()).await {
             Ok(Some(user)) => {
                 // In a real application, generate a proper JWT token
                 // For now, we'll use a simple token format
@@ -60,7 +51,7 @@ pub async fn admin_login(
     }
 }
 
-#[get("/admin/verify?<token>")]
+#[get("/api/admin/verify?<token>")]
 pub async fn admin_verify(
     token: String,
     sqlxPool: &State<sPool<Postgres>>,
@@ -70,10 +61,7 @@ pub async fn admin_verify(
         let parts: Vec<&str> = token.split('_').collect();
         if parts.len() >= 2 {
             if let Ok(user_id) = parts[1].parse::<i32>() {
-                let query = "SELECT username FROM admin_users WHERE id = $1 AND is_active = true";
-                match sqlx::query_as::<_, AdminUser>(query)
-                    .bind(user_id)
-                    .fetch_optional(sqlxPool.inner()).await {
+                match admin_user::verify_admin_user_by_id(user_id, sqlxPool.inner()).await {
                     Ok(Some(user)) => {
                         Ok(json!({
                             "valid": true,

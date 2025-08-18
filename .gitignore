@@ -33,3 +33,4 @@ yg/yg/bin
 yg/yg/obj
 .env
 dev.sh
+server/images

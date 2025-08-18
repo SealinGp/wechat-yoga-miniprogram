@@ -218,9 +218,9 @@ The main server routes are mounted at `/` and include:
 - `GET /yoga/membership/usage?<openid>&<card_id>`: Card usage history
 
 #### Admin Operations
-- `GET /yoga/admin/lessons`: Admin lesson management
+- `GET /api/admin/lessons`: Admin lesson management
 - `GET /yoga/admin/users/all`: User management
-- `POST /yoga/admin/lesson/update`: Update lesson details
+- `POST /api/admin/lesson/update`: Update lesson details
 - Various other admin endpoints for content management
 
 #### Content Management

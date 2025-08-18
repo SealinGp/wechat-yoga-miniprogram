@@ -5,7 +5,9 @@ use serde_json::json;
 use sqlx::{Pool as sPool, Postgres, FromRow};
 use chrono::NaiveDateTime;
 
-#[derive(Serialize, Deserialize, FromRow)]
+use crate::models::action_button::get_all_action_buttons;
+
+#[derive(Debug,Serialize, Deserialize, FromRow)]
 pub struct Action {
     pub id: Option<i32>,
     pub name: String,
@@ -33,16 +35,9 @@ pub struct UpdateActionRequest {
     pub is_active: Option<bool>,
 }
 
-#[get("/admin/actions")]
+#[get("/api/admin/actions")]
 pub async fn get_actions(sqlxPool: &State<sPool<Postgres>>) -> Result<String, Status> {
-    let query = r#"
-        SELECT id, name, icon, link, sort_order, is_active,
-               created_at AT TIME ZONE 'Asia/Shanghai' as created_at
-        FROM action_buttons
-        ORDER BY sort_order ASC, created_at DESC
-    "#;
-    
-    match sqlx::query_as::<_, Action>(query).fetch_all(sqlxPool.inner()).await {
+    match get_all_action_buttons(sqlxPool.inner()).await {
         Ok(actions) => {
             Ok(serde_json::to_string(&actions).unwrap())
         }
@@ -53,7 +48,7 @@ pub async fn get_actions(sqlxPool: &State<sPool<Postgres>>) -> Result<String, St
     }
 }
 
-#[post("/admin/actions", data = "<request>")]
+#[post("/api/admin/actions", data = "<request>")]
 pub async fn create_action(
     request: rocket::serde::json::Json<CreateActionRequest>,
     sqlxPool: &State<sPool<Postgres>>
@@ -84,7 +79,7 @@ pub async fn create_action(
     }
 }
 
-#[put("/admin/actions/<id>", data = "<request>")]
+#[put("/api/admin/actions/<id>", data = "<request>")]
 pub async fn update_action(
     id: i32,
     request: rocket::serde::json::Json<UpdateActionRequest>,
@@ -123,7 +118,7 @@ pub async fn update_action(
     }
 }
 
-#[delete("/admin/actions/<id>")]
+#[delete("/api/admin/actions/<id>")]
 pub async fn delete_action(id: i32, sqlxPool: &State<sPool<Postgres>>) -> Result<String, Status> {
     let query = "DELETE FROM action_buttons WHERE id = $1";
     

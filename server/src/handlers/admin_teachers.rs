@@ -5,6 +5,7 @@ use serde_json::json;
 use chrono::NaiveDateTime;
 use sqlx::{Pool as sPool, Postgres, FromRow};
 use rust_decimal::Decimal;
+use crate::models::teacher;
 
 
 #[derive(Debug, Serialize, Deserialize, FromRow)]
@@ -46,168 +47,93 @@ pub struct UpdateTeacherRequest {
     pub is_active: Option<bool>,
 }
 
-#[get("/admin/teachers")]
+#[get("/api/admin/teachers")]
 pub async fn get_teachers(sqlxPool: &State<sPool<Postgres>>) -> Result<String, Status> {
-    let query = r#"
-        SELECT 
-            t.id, 
-            t.name, 
-            t.description, 
-            t.avatar_url, 
-            t.bio, 
-            t.certifications, 
-            t.specialties,
-            t.experience_years, 
-            COALESCE(AVG(tr.rating), 0.0) as average_rating,
-            COUNT(tr.rating) as total_ratings,
-            t.is_active,
-            t.created_at AT TIME ZONE 'Asia/Shanghai' as created_at
-        FROM teachers t
-        LEFT JOIN teacher_ratings tr ON t.id = tr.teacher_id
-        GROUP BY t.id, t.name, t.description, t.avatar_url, t.bio, t.certifications, 
-                 t.specialties, t.experience_years, t.is_active, t.created_at
-        ORDER BY t.is_active DESC, COALESCE(AVG(tr.rating), 0.0) DESC, t.experience_years DESC
-    "#;
-    
-    match sqlx::query_as::<_, Teacher>(query).fetch_all(sqlxPool.inner()).await {
+    match teacher::get_all_teachers(sqlxPool.inner()).await {
         Ok(teachers) => {
-            Ok(serde_json::to_string(&teachers).unwrap())
+            match serde_json::to_string(&teachers) {
+                Ok(json) => Ok(json),
+                Err(error) => {
+                    println!("JSON serialization error: {}", error);
+                    Err(Status::InternalServerError)
+                }
+            }
         }
         Err(error) => {
-            println!("Error querying teachers: {}", error);
+            println!("Database error: {}", error);
             Err(Status::InternalServerError)
         }
     }
 }
 
-#[post("/admin/teachers", data = "<teacher_request>")]
+#[post("/api/admin/teachers", data = "<teacher_request>")]
 pub async fn create_teacher(
     teacher_request: rocket::serde::json::Json<CreateTeacherRequest>,
     sqlxPool: &State<sPool<Postgres>>,
 ) -> Result<String, Status> {
-    let query = r#"
-        WITH new_teacher AS (
-            INSERT INTO teachers (name, description, avatar_url, bio, certifications, specialties, experience_years)
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
-            RETURNING id, name, description, avatar_url, bio, certifications, specialties,
-                     experience_years, is_active, created_at
-        )
-        SELECT 
-            nt.id,
-            nt.name,
-            nt.description,
-            nt.avatar_url,
-            nt.bio,
-            nt.certifications,
-            nt.specialties,
-            nt.experience_years,
-            0.0 as average_rating,
-            0::bigint as total_ratings,
-            nt.is_active,
-            nt.created_at AT TIME ZONE 'Asia/Shanghai' as created_at
-        FROM new_teacher nt
-    "#;
+    // Convert handler request to model request
+    let create_request = teacher::TeacherCreateRequest {
+        name: teacher_request.name.clone(),
+        description: teacher_request.description.clone(),
+        avatar_url: teacher_request.avatar_url.clone(),
+        bio: teacher_request.bio.clone(),
+        certifications: teacher_request.certifications.clone(),
+        specialties: teacher_request.specialties.clone(),
+        experience_years: teacher_request.experience_years,
+    };
     
-    match sqlx::query_as::<_, Teacher>(query)
-        .bind(&teacher_request.name)
-        .bind(&teacher_request.description)
-        .bind(&teacher_request.avatar_url)
-        .bind(&teacher_request.bio)
-        .bind(&teacher_request.certifications)
-        .bind(&teacher_request.specialties)
-        .bind(teacher_request.experience_years.unwrap_or(0))
-        .fetch_one(sqlxPool.inner()).await {
-        Ok(teacher) => {
-            Ok(serde_json::to_string(&teacher).unwrap())
+    match teacher::create_teacher(&create_request, sqlxPool.inner()).await {
+        Ok(teacher_id) => {
+            Ok(json!({"success": true, "id": teacher_id, "message": "Teacher created successfully"}).to_string())
         }
         Err(error) => {
-            println!("Error creating teacher: {}", error);
+            println!("Database error: {}", error);
             Err(Status::InternalServerError)
         }
     }
 }
 
-#[put("/admin/teachers/<id>", data = "<teacher_request>")]
+#[put("/api/admin/teachers/<id>", data = "<teacher_request>")]
 pub async fn update_teacher(
     id: i32,
     teacher_request: rocket::serde::json::Json<UpdateTeacherRequest>,
     sqlxPool: &State<sPool<Postgres>>,
 ) -> Result<String, Status> {
-    let query = r#"
-        WITH updated_teacher AS (
-            UPDATE teachers 
-            SET name = COALESCE($2, name),
-                description = COALESCE($3, description),
-                avatar_url = COALESCE($4, avatar_url),
-                bio = COALESCE($5, bio),
-                certifications = COALESCE($6, certifications),
-                specialties = COALESCE($7, specialties),
-                experience_years = COALESCE($8, experience_years),
-                is_active = COALESCE($9, is_active),
-                updated_at = CURRENT_TIMESTAMP
-            WHERE id = $1
-            RETURNING id, name, description, avatar_url, bio, certifications, specialties,
-                     experience_years, is_active, created_at
-        )
-        SELECT 
-            ut.id,
-            ut.name,
-            ut.description,
-            ut.avatar_url,
-            ut.bio,
-            ut.certifications,
-            ut.specialties,
-            ut.experience_years,
-            COALESCE(AVG(tr.rating), 0.0) as average_rating,
-            COUNT(tr.rating) as total_ratings,
-            ut.is_active,
-            ut.created_at AT TIME ZONE 'Asia/Shanghai' as created_at
-        FROM updated_teacher ut
-        LEFT JOIN teacher_ratings tr ON ut.id = tr.teacher_id
-        GROUP BY ut.id, ut.name, ut.description, ut.avatar_url, ut.bio, ut.certifications,
-                 ut.specialties, ut.experience_years, ut.is_active, ut.created_at
-    "#;
+    // Convert handler request to model request
+    let update_request = teacher::TeacherUpdateRequest {
+        id,
+        name: teacher_request.name.clone(),
+        description: teacher_request.description.clone(),
+        avatar_url: teacher_request.avatar_url.clone(),
+        bio: teacher_request.bio.clone(),
+        certifications: teacher_request.certifications.clone(),
+        specialties: teacher_request.specialties.clone(),
+        experience_years: teacher_request.experience_years,
+        is_active: teacher_request.is_active,
+    };
     
-    match sqlx::query_as::<_, Teacher>(query)
-        .bind(id)
-        .bind(&teacher_request.name)
-        .bind(&teacher_request.description)
-        .bind(&teacher_request.avatar_url)
-        .bind(&teacher_request.bio)
-        .bind(&teacher_request.certifications)
-        .bind(&teacher_request.specialties)
-        .bind(&teacher_request.experience_years)
-        .bind(&teacher_request.is_active)
-        .fetch_optional(sqlxPool.inner()).await {
-        Ok(Some(teacher)) => {
-            Ok(serde_json::to_string(&teacher).unwrap())
+    match teacher::update_teacher(&update_request, sqlxPool.inner()).await {
+        Ok(true) => {
+            Ok(json!({"success": true, "message": "Teacher updated successfully"}).to_string())
         }
-        Ok(None) => {
+        Ok(false) => {
             Err(Status::NotFound)
         }
         Err(error) => {
-            println!("Error updating teacher: {}", error);
+            println!("Database error: {}", error);
             Err(Status::InternalServerError)
         }
     }
 }
 
-#[delete("/admin/teachers/<id>")]
+#[delete("/api/admin/teachers/<id>")]
 pub async fn delete_teacher(id: i32, sqlxPool: &State<sPool<Postgres>>) -> Result<String, Status> {
-    let query = "DELETE FROM teachers WHERE id = $1";
-    
-    match sqlx::query(query)
-        .bind(id)
-        .execute(sqlxPool.inner()).await {
-        Ok(result) => {
-            if result.rows_affected() > 0 {
-                Ok(json!({"success": true, "message": "Teacher deleted successfully"}).to_string())
-            } else {
-                Err(Status::NotFound)
-            }
+    match teacher::delete_teacher(id, sqlxPool.inner()).await {
+        Ok(response) => {
+            Ok(response.to_string())
         }
         Err(error) => {
-            println!("Error deleting teacher: {}", error);
+            println!("Database error: {}", error);
             Err(Status::InternalServerError)
         }
     }
