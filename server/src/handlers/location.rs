@@ -175,6 +175,18 @@ pub struct UpdateLocationRequest {
     pub is_active: Option<bool>,
 }
 
+// 获取所有地点列表
+#[get("/api/admin/locations")]
+pub async fn get_locations1(sqlxPool: &State<sPool<Postgres>>) -> Result<String, Status> {
+    match crate::models::location::get_all_locations(sqlxPool.inner()).await {
+        Ok(locations) => Ok(locations.to_string()),
+        Err(error) => {
+            println!("Database error: {}", error);
+            Ok("[]".to_string())
+        }
+    }
+}
+
 #[post("/api/admin/locations", data = "<location_request>")]
 pub async fn create_location(
     location_request: rocket::serde::json::Json<CreateLocationRequest>,

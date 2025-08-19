@@ -1,12 +1,12 @@
 use sqlx::{Pool as sPool, Postgres};
-use crate::models::lession::{self, Lesson, LessonCreateRequest};
+use crate::models::lession::{self, Lesson};
 use rocket::http::Status;
 use rocket::State;
 use serde_json::json;
 
 #[post("/api/admin/lesson", data = "<data>")]
 pub async fn create_lesson(
-    data: rocket::serde::json::Json<LessonCreateRequest>,
+    data: rocket::serde::json::Json<Lesson>,
     sqlx_pool: &State<sPool<Postgres>>
 ) -> Result<String, Status> {
     match lession::create_lesson(&data.into_inner(), sqlx_pool.inner()).await {

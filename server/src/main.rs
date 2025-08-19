@@ -115,6 +115,7 @@ async fn main() -> Result<(), rocket::Error> {
                 handlers::admin_users::update_admin_user,
                 handlers::admin_users::delete_admin_user,
                 handlers::location::get_locations,
+                handlers::location::get_locations1,
                 handlers::location::get_available_locations,
                 handlers::location::check_location_availability,
                 handlers::location::get_location_stats,

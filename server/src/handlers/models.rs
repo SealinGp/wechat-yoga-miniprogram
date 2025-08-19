@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize,Default)]
 pub struct Teacher {
     pub id: i32,
     pub name: String,
@@ -19,7 +19,7 @@ pub struct Teacher {
     pub is_active: bool,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize,Default)]
 pub struct Location {
     pub id: i32,
     pub name: String,
@@ -43,8 +43,8 @@ pub struct Lesson {
     pub id: i32,
     pub title: String,
     pub description: Option<String>,
-    pub teacher: Option<Teacher>,
-    pub location: Option<Location>,
+    pub teacher: Teacher,
+    pub location: Location,
     pub lesson_type: String,
     pub difficulty_level: String,
     pub start_time: DateTime<Utc>,

@@ -1,7 +1,10 @@
+use std::process::id;
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool as sPool, Pool, Postgres, FromRow, Row};
 pub use crate::handlers::models::Lesson;
+use crate::handlers::models::Teacher;
 
 // Helper function to convert a database row to a Lesson struct
 fn row_to_lession(row: &sqlx::postgres::PgRow) -> Lesson {
@@ -46,13 +49,15 @@ fn row_to_lession(row: &sqlx::postgres::PgRow) -> Lesson {
     } else {
         None
     };
-    
+
+    let t = teacher.unwrap_or_default();
+    let l = location.unwrap_or_default();
     Lesson {
         id: row.get("id"),
         title: row.get("title"),
         description: row.get("description"),
-        teacher,
-        location,
+        teacher: t,
+        location: l,
         lesson_type: row.get("lesson_type"),
         difficulty_level: row.get("difficulty_level"),
         start_time: row.get("start_time"),
@@ -247,25 +252,7 @@ pub async fn get_lessons_with_teachers(teacher_id: i32, sqlxPool: &sPool<Postgre
     Ok(lessons)
 }
 
-// Struct for lesson creation requests
-#[derive(Debug, Serialize, Deserialize)]
-pub struct LessonCreateRequest {
-    pub title: String,
-    pub description: Option<String>,
-    pub teacher_id: Option<i32>,
-    pub location_id: Option<i32>,
-    pub lesson_type: String,
-    pub difficulty_level: String,
-    pub start_time: DateTime<Utc>,
-    pub end_time: DateTime<Utc>,
-    pub max_students: i32,
-    pub price: Option<rust_decimal::Decimal>,
-    pub equipment_required: Option<Vec<String>>,
-    pub prerequisites: Option<String>,
-    pub cancellation_policy: Option<String>,
-    pub notes: Option<String>,
-    pub is_active: Option<bool>,
-}
+
 
 // Simple struct for lesson update requests
 #[derive(Debug, Serialize, Deserialize)]
@@ -289,7 +276,7 @@ pub struct LessonUpdateData {
 }
 
 // Create a new lesson
-pub async fn create_lesson(data: &LessonCreateRequest, sqlx_pool: &Pool<Postgres>) -> Result<i32, sqlx::Error> {
+pub async fn create_lesson(data: &Lesson, sqlx_pool: &Pool<Postgres>) -> Result<i32, sqlx::Error> {
     let query = r#"
         INSERT INTO lessons (
             title, description, teacher_id, location_id, lesson_type, difficulty_level,
@@ -302,11 +289,12 @@ pub async fn create_lesson(data: &LessonCreateRequest, sqlx_pool: &Pool<Postgres
         ) RETURNING id
     "#;
     
+    
     let result = sqlx::query_scalar::<_, i32>(query)
         .bind(&data.title)
         .bind(&data.description)
-        .bind(data.teacher_id)
-        .bind(data.location_id)
+        .bind(data.teacher.id)
+        .bind(data.location.id)
         .bind(&data.lesson_type)
         .bind(&data.difficulty_level)
         .bind(&data.start_time)
@@ -317,7 +305,7 @@ pub async fn create_lesson(data: &LessonCreateRequest, sqlx_pool: &Pool<Postgres
         .bind(&data.prerequisites)
         .bind(&data.cancellation_policy)
         .bind(&data.notes)
-        .bind(data.is_active.unwrap_or(true))
+        .bind(data.is_active)
         .fetch_one(sqlx_pool)
         .await?;
     
